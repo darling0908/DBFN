@@ -3,7 +3,7 @@ This is the code implementation of `DualBranch-FusionNet: A Hybrid CNN-Transform
 
 The main branch work with **Python 3.10**, **Pytorch 2.1.1+cu118**
 # Method
-EACB is implemented in `EACB.py` and TFEB is implemented in `TFEB.py`.
+![Logo](./images/DBFN.png)EACB is implemented in `EACB.py` and TFEB is implemented in `TFEB.py`.
 # Run
 Run the `train.py` file to start training the network, and `config.py` is the configuration of relevant parameters.
 # Other
