@@ -1,7 +1,10 @@
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
 from prettytable import PrettyTable
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, f1_score, roc_curve, auc, recall_score, precision_score, accuracy_score, \
+    confusion_matrix
 from sklearn.preprocessing import LabelBinarizer
 from torch import nn
 
@@ -125,3 +128,72 @@ def plt_single(config, train_loss, log_dir):
     plt.legend()
     # 保存图形到指定位置
     plt.savefig('{}/Training_loss_plot.png'.format(log_dir))
+
+
+class BinaryClassificationMetrics:
+    def __init__(self, y_true, y_pred, y_pred_prob):
+        self.y_true = np.array(y_true)
+        self.y_pred = np.array(y_pred)
+        self.y_pred_prob = np.array(y_pred_prob)
+        self.conf_matrix = confusion_matrix(self.y_true, self.y_pred)
+        self.tn, self.fp, self.fn, self.tp = self.conf_matrix.ravel()
+
+    def accuracy(self):
+        return accuracy_score(self.y_true, self.y_pred)
+
+    def precision(self):
+        return precision_score(self.y_true, self.y_pred)
+
+    def recall(self):
+        return recall_score(self.y_true, self.y_pred)
+
+    def sensitivity(self):
+        return recall_score(self.y_true, self.y_pred)
+
+    def specificity(self):
+        # actual_negatives = np.sum(self.y_true == 0)
+        # # print(actual_negatives)
+        # true_negatives = np.sum((self.y_true == 0) & (self.y_pred == 0))
+        # # print(true_negatives)
+        # return true_negatives / actual_negatives if actual_negatives else 0
+        return self.tn / (self.tn + self.fp) if (self.tn + self.fp) != 0 else 0
+
+    def f1_score(self):
+        return f1_score(self.y_true, self.y_pred)
+
+    def roc_auc(self):
+        return roc_auc_score(self.y_true, self.y_pred_prob)
+
+    def plot_roc_curve(self, config, save_path=None):
+        fpr, tpr, thresholds = roc_curve(self.y_true, self.y_pred_prob)
+        save_roc_data(fpr, tpr, config, save_dir='{}/roc_data'.format(config.test_folder))
+        roc_auc = auc(fpr, tpr)
+
+        plt.figure()
+        plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.4f)' % roc_auc)
+        plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic (ROC) Curve')
+        plt.legend(loc="lower right")
+        if save_path:
+            plt.savefig(save_path)
+
+    def save_metrics(self, file_path):
+        with open(file_path, 'w') as f:
+            f.write("Accuracy: {}\n".format(self.accuracy()))
+            f.write("Precision: {}\n".format(self.precision()))
+            f.write("Recall: {}\n".format(self.recall()))
+            f.write("Sensitivity: {}\n".format(self.sensitivity()))
+            f.write("Specificity: {}\n".format(self.specificity()))
+            f.write("F1 Score: {}\n".format(self.f1_score()))
+            f.write("ROC AUC: {}\n".format(self.roc_auc()))
+
+
+def save_roc_data(fpr, tpr, config, save_dir=None):
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    np.save(os.path.join(save_dir, f'{config.net}_fpr.npy'), fpr)
+    np.save(os.path.join(save_dir, f'{config.net}_tpr.npy'), tpr)
