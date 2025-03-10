@@ -14,6 +14,10 @@ def train_model(net, optimizer, scheduler, train_data, val_data, folder_dir, con
     # train loop
     output_file = '{}/{}'.format(folder_dir, 'metrics_results.txt')
     best_accuracy = 0.0
+    # Variables for early stopping based on validation loss
+    best_val_loss = float('inf')
+    early_stopping_patience = 5
+    early_stopping_counter = 0
     val_accuracies = []  # 用于存储每个 epoch 的验证准确率
     labels_all = []
     predicted_labels_all = []
@@ -90,6 +94,8 @@ def train_model(net, optimizer, scheduler, train_data, val_data, folder_dir, con
         if torch.isnan(loss):
             break  # 如果损失变成 NaN，停止训练
 
+        avg_train_loss = training_loss / len(train_data)
+        avg_val_loss = val_loss / len(val_data)
         val_accuracy = correct / total
         val_accuracies.append(val_accuracy)  # 记录当前 epoch 的验证指标
         plt_train_loss.append(training_loss / len(train_data))
@@ -101,6 +107,14 @@ def train_model(net, optimizer, scheduler, train_data, val_data, folder_dir, con
             best_accuracy = val_accuracy
             best_accuracy_path = os.path.join(folder_dir, 'models_best.pth')
             torch.save(net.state_dict(), best_accuracy_path)
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            early_stopping_counter = 0
+        else:
+            early_stopping_counter += 1
+            if early_stopping_counter >= early_stopping_patience:
+                print("Validation loss has not improved for {} consecutive epochs. Early stopping.".format(early_stopping_patience))
+                break
 
     acc = sum(val_accuracies) / len(val_accuracies)
     metrics = MetricsEvaluator(config.num_outs)

@@ -47,7 +47,7 @@ def run(config):
             f.writelines('weight_decay = {}\n'.format(config.weight_decay))
             f.writelines('optmizer = {}\n'.format(type(optimizer).__name__))
             f.writelines('scheduler = {}\n'.format(type(scheduler).__name__) if scheduler else 'None')
-        net, val_accuracy, avg_pre, avg_recall, avg_f1, cm, auc =  train_model(net, optimizer, scheduler,
+        net, val_accuracy, avg_pre, avg_recall, avg_f1, cm, auc = train_model(net, optimizer, scheduler,
                                                                               train_data_loader,
                                                                               val_data_loader, folder_dir,
                                                                               config, device=cuda_dev)

@@ -61,8 +61,8 @@ class MLP(nn.Module):
     def __init__(self, inp_dim, out_dim):
         super(MLP, self).__init__()
         self.conv1 = Conv(inp_dim, inp_dim, 3, relu=False, bias=False, group=inp_dim)
-        self.conv2 = Conv(inp_dim, inp_dim * 4, 1, relu=False, bias=False)
-        self.conv3 = Conv(inp_dim * 4, out_dim, 1, relu=False, bias=False, bn=True)
+        # self.conv2 = Conv(inp_dim, inp_dim * 4, 1, relu=False, bias=False)
+        # self.conv3 = Conv(inp_dim * 4, out_dim, 1, relu=False, bias=False, bn=True)
         self.gelu = nn.GELU()
         self.bn1 = nn.BatchNorm2d(inp_dim)
 
