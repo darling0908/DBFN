@@ -61,8 +61,8 @@ class MLP(nn.Module):
     def __init__(self, inp_dim, out_dim):
         super(MLP, self).__init__()
         self.conv1 = Conv(inp_dim, inp_dim, 3, relu=False, bias=False, group=inp_dim)
-        # self.conv2 = Conv(inp_dim, inp_dim * 4, 1, relu=False, bias=False)
-        # self.conv3 = Conv(inp_dim * 4, out_dim, 1, relu=False, bias=False, bn=True)
+        self.conv2 = Conv(inp_dim, inp_dim * 4, 1, relu=False, bias=False)
+        self.conv3 = Conv(inp_dim * 4, out_dim, 1, relu=False, bias=False, bn=True)
         self.gelu = nn.GELU()
         self.bn1 = nn.BatchNorm2d(inp_dim)
 
@@ -73,9 +73,9 @@ class MLP(nn.Module):
         out += residual
 
         out = self.bn1(out)
-        # out = self.conv2(out)
-        # out = self.gelu(out)
-        # out = self.conv3(out)
+        out = self.conv2(out)
+        out = self.gelu(out)
+        out = self.conv3(out)
 
         return out
 
@@ -148,7 +148,12 @@ class SFM(nn.Module):
         self.relu = nn.GELU()
 
     def forward(self, l, g):
-        X_f = torch.cat([g, l], 1)
+        W_local = self.W_l(l)
+        W_global = self.W_g(g)
+        # print("2222222\n", W_local.shape, W_global.shape)
+
+
+        X_f = torch.cat([W_local, W_global], 1)
         X_f = self.norm2(X_f)
         X_f = self.W(X_f)
         X_f = self.relu(X_f)

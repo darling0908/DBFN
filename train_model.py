@@ -11,6 +11,14 @@ from untils import cross_entropy_loss, MetricsEvaluator, plt_loss, plt_single
 def train_model(net, optimizer, scheduler, train_data, val_data, folder_dir, config, device=None):
     print('Start training...')
     net = net.to(device)
+
+    if hasattr(config, "pretrained_path") and config.pretrained_path:
+        if os.path.exists(config.pretrained_path):
+            print(f"Loading pretrained weights from {config.pretrained_path}...")
+            state_dict = torch.load(config.pretrained_path, map_location=device)
+            net.load_state_dict(state_dict, strict=False)
+        else:
+            print(f"Warning: Pretrained model path {config.pretrained_path} not found!")
     # train loop
     output_file = '{}/{}'.format(folder_dir, 'metrics_results.txt')
     best_accuracy = 0.0
@@ -111,18 +119,19 @@ def train_model(net, optimizer, scheduler, train_data, val_data, folder_dir, con
             best_val_loss = avg_val_loss
             early_stopping_counter = 0
         else:
-            early_stopping_counter += 1
-            if early_stopping_counter >= early_stopping_patience:
-                print("Validation loss has not improved for {} consecutive epochs. Early stopping.".format(early_stopping_patience))
-                break
+            if epoch >= 10:
+                early_stopping_counter += 1
+                if early_stopping_counter >= early_stopping_patience:
+                    print("Validation loss has not improved for {} consecutive epochs. Early stopping.".format(early_stopping_patience))
+                    break
 
     acc = sum(val_accuracies) / len(val_accuracies)
     metrics = MetricsEvaluator(config.num_outs)
     metrics.evaluate_metrics(labels_all, predicted_labels_all, acc=acc,
                              output_file=output_file)
     avg_pre, avg_recall, avg_f1, auc, cm = metrics.get_metrics()
-    plt_loss(config, plt_train_loss, plt_val_loss, folder_dir)
-    plt_single(config, plt_train_loss, folder_dir)
+    # plt_loss(config, plt_train_loss, plt_val_loss, folder_dir)
+    # plt_single(config, plt_train_loss, folder_dir)
     print('This Training\'s val accuracy is {:.4f}'.format(acc))
     print('Training ended!')
 

@@ -29,15 +29,14 @@ def run(config):
     log_dir = os.path.join(config.Log_folder, timestamp)
     os.makedirs(log_dir, exist_ok=True)
     optimizer = optim.AdamW(net.parameters(), lr=config.lr, weight_decay=config.weight_decay)
-
-    scheduler = None
-    # scheduler = CosineAnnealingLR(optimizer, T_max=config.epochs, eta_min=0)
+    # scheduler = None
+    scheduler = CosineAnnealingLR(optimizer, T_max=config.epochs, eta_min=0)
     # scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
 
     for fold in range(config.num_folders):
         train_data_loader = cross_validation_loader.get_train_loaders()[fold]
         val_data_loader = cross_validation_loader.get_val_loaders()[fold]
-        folder_dir = os.path.join(log_dir, 'Fold {}'.format(fold + 1))
+        folder_dir = os.path.join(log_dir, 'Fold{}'.format(fold + 1))
         os.makedirs(folder_dir, exist_ok=True)
         with open(r"{}/log_info.txt".format(log_dir), 'w') as f:
             f.writelines('mode_type = {}\n'.format(config.net))
@@ -118,6 +117,12 @@ if __name__ == "__main__":
         default=config.lr, type=float,
         help="Learning Rate"
     )
+    parser.add_argument(
+        "--pre",
+        default="",
+        type=str,
+        help="Path to the pretrained model"
+    )
 
     args = parser.parse_args()
     config.net = args.net
@@ -125,5 +130,6 @@ if __name__ == "__main__":
     config.batch_size = args.batch
     config.num_workers = args.workers
     config.lr = args.lr
+    config.pretrained_path = args.pre
 
     run(config)

@@ -44,7 +44,7 @@ class CrossValidationDataLoader:
         self.val_transform = config.transform_val
 
         # Load entire dataset
-        full_dataset = ImageFolder('CrossValidate_Data/train')
+        full_dataset = ImageFolder('E:/PycharmProjects/Cer_Classification/CrossValidate_Data/train')
         num_samples = len(full_dataset)
 
         # Divide dataset by class

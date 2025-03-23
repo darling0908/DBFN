@@ -10,17 +10,17 @@ from models.layers.stem import ConvBNReLU
 
 class DBFN(nn.Module):
     def __init__(self, num_classes, down_path_dropout, stem_chs=[64, 32, 64], in_chans=3,
-                 down_depths=[2, 2, 2, 2], up_depths=[2, 2, 8, 2], HFF_dp=0.1, embed_dim=[96, 192, 384, 768],
+                 down_depths=[2, 2, 2, 2], up_depths=[2, 2, 8, 2], SFM_dp=0.1, embed_dim=[96, 192, 384, 768],
                  topks=[1, 4, 16, 49], qk_dims=[96, 192, 384, 768], head_dim=32, kv_per_wins=[-1, -1, -1, -1],
                  kv_downsample_kernels=[4, 2, 1, 1], kv_downsample_ratios=[4, 2, 1, 1], up_path_dropout=0.,
                  ):
         super().__init__()
         # Preprocessing Setting Start #
         self.stem = nn.Sequential(
-            ConvBNReLU(in_chans, stem_chs[0], kernel_size=4, stride=4),
-            # ConvBNReLU(stem_chs[0], stem_chs[1], kernel_size=3, stride=1),
-            # ConvBNReLU(stem_chs[1], stem_chs[2], kernel_size=3, stride=1),
-            # ConvBNReLU(stem_chs[2], stem_chs[2], kernel_size=3, stride=2),
+            ConvBNReLU(in_chans, stem_chs[0], kernel_size=3, stride=2),
+            ConvBNReLU(stem_chs[0], stem_chs[1], kernel_size=3, stride=1),
+            ConvBNReLU(stem_chs[1], stem_chs[2], kernel_size=3, stride=1),
+            ConvBNReLU(stem_chs[2], stem_chs[2], kernel_size=3, stride=2),
         )
 
         # Down Branch Setting Start #
@@ -74,7 +74,7 @@ class DBFN(nn.Module):
             cur += up_depths[i]
         # Up Branch Setting End #
         # Hierarchical Feature Fusion Block Setting Start #
-        self.fu4 = SFM(ch_1=768, ch_2=768, r_2=32, ch_int=768, ch_out=768, drop_rate=HFF_dp)
+        self.fu4 = SFM(ch_1=768, ch_2=768, r_2=16, ch_int=768, ch_out=768, drop_rate=SFM_dp)
         # Hierarchical Feature Fusion Block Setting End #
         # Output Start #
         self.conv_norm = nn.BatchNorm2d(768, eps=1e-5)
@@ -84,11 +84,25 @@ class DBFN(nn.Module):
         # self._initialize_weights()
         # Output End #
 
-    # def merge_bn(self):
-    #     self.eval()
-    #     for idx, module in self.named_modules():
-    #         if isinstance(module, EACB) or isinstance(module, TFEB):
-    #             module.merge_bn()
+    def merge_bn(self):
+        self.eval()
+        for idx, module in self.named_modules():
+            if isinstance(module, EACB) or isinstance(module, TFEB):
+                module.merge_bn()
+
+    def _initialize_weights(self):
+        for n, m in self.named_modules():
+            if isinstance(m, (nn.BatchNorm2d, nn.GroupNorm, nn.LayerNorm, nn.BatchNorm1d)):
+                nn.init.constant_(m.weight, 1.0)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                trunc_normal_(m.weight, std=.02)
+                if hasattr(m, 'bias') and m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Conv2d):
+                trunc_normal_(m.weight, std=.02)
+                if hasattr(m, 'bias') and m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
         x_stem = self.stem(x)

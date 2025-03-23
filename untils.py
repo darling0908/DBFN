@@ -14,6 +14,16 @@ def cross_entropy_loss():
     return criterion
 
 
+def calculate_metrics(y_true, y_pred):
+    precision = precision_score(y_true, y_pred, average=None)
+    recall = recall_score(y_true, y_pred, average=None)
+    f1 = f1_score(y_true, y_pred, average=None)
+    cm = confusion_matrix(y_true, y_pred)
+    overall_precision = precision_score(y_true, y_pred, average='macro')
+    overall_recall = recall_score(y_true, y_pred, average='macro')
+    overall_f1 = f1_score(y_true, y_pred, average='macro')
+    return precision, recall, f1, overall_precision, overall_recall, overall_f1, cm
+
 def compute_four_class_auc(y_true, y_pred):
     """
     计算四分类问题的AUC
